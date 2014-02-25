@@ -625,20 +625,26 @@ class tx_snowbabel_Configuration {
 	 * @return void
 	 */
 	private function writeLocalconfArray(array $LocalconfValues) {
+		if ($this->getTypo3Version() < 6000000) {
+			// Instance of install tool
+			$instObj = new t3lib_install;
+			$instObj->allowUpdateLocalConf = 1;
+			$instObj->updateIdentity = 'Snowbabel';
 
-		// Instance of install tool
-		$instObj = new t3lib_install;
-		$instObj->allowUpdateLocalConf = 1;
-		$instObj->updateIdentity = 'Snowbabel';
+			// Get lines from localconf file
+			$lines = $instObj->writeToLocalconf_control();
+			$instObj->setValueInLocalconfFile($lines, '$TYPO3_CONF_VARS[\'EXT\'][\'extConf\'][\'snowbabel\']', serialize($LocalconfValues));
+			$instObj->writeToLocalconf_control($lines);
 
-		// Get lines from localconf file
-		$lines = $instObj->writeToLocalconf_control();
-		$instObj->setValueInLocalconfFile($lines, '$TYPO3_CONF_VARS[\'EXT\'][\'extConf\'][\'snowbabel\']', serialize($LocalconfValues));
-		$instObj->writeToLocalconf_control($lines);
+			t3lib_extMgm::removeCacheFiles();
+		} else {
+			/** @var $objectManager \TYPO3\CMS\Extbase\Object\ObjectManager */
+			$objectManager = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance('TYPO3\\CMS\\Extbase\\Object\\ObjectManager');
 
-		t3lib_extMgm::removeCacheFiles();
-
-		// TODO:
+			/** @var $configurationUtility \TYPO3\CMS\Extensionmanager\Utility\ConfigurationUtility */
+			$configurationUtility = $objectManager->get('TYPO3\\CMS\\Extensionmanager\\Utility\\ConfigurationUtility');
+			$configurationUtility->writeConfiguration($LocalconfValues, 'snowbabel');
+		}
 	}
 
 	/**
@@ -968,7 +974,6 @@ class tx_snowbabel_Configuration {
 		}
 
 	}
-
 }
 
 if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/snowbabel/Classes/Configuration/class.tx_snowbabel_configuration.php'])	{
